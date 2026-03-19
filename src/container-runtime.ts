@@ -40,6 +40,21 @@ function detectProxyBindHost(): string {
   return '0.0.0.0';
 }
 
+/** Detect if the container runtime is Podman (Docker-compatible alias). */
+export function isPodman(): boolean {
+  try {
+    // podman-docker reports "docker version X.X.X" so --version is unreliable.
+    // Instead check docker info output for buildahVersion which is Podman-specific.
+    const info = execSync(`${CONTAINER_RUNTIME_BIN} info`, {
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+    return info.toLowerCase().includes('buildahversion');
+  } catch {
+    return false;
+  }
+}
+
 /** CLI args needed for the container to resolve the host gateway. */
 export function hostGatewayArgs(): string[] {
   // On Linux, host.docker.internal isn't built-in — add it explicitly

@@ -22,6 +22,7 @@ import {
   CONTAINER_HOST_GATEWAY,
   CONTAINER_RUNTIME_BIN,
   hostGatewayArgs,
+  isPodman,
   readonlyMountArgs,
   stopContainer,
 } from './container-runtime.js';
@@ -240,6 +241,14 @@ function buildContainerArgs(
 
   // Runtime-specific args for host gateway resolution
   args.push(...hostGatewayArgs());
+
+  // Podman rootless uses user namespace remapping by default, which means uid=1000
+  // inside the container maps to a sub-uid on the host — not the calling user's uid.
+  // --userns=keep-id maps host uid → same uid inside the container so the container
+  // can read and delete bind-mounted files owned by the host user.
+  if (isPodman()) {
+    args.push('--userns=keep-id');
+  }
 
   // Run as host user so bind-mounted files are accessible.
   // Skip when running as root (uid 0), as the container's node user (uid 1000),
